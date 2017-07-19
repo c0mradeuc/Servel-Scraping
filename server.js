@@ -7,53 +7,48 @@ var _max = 18065017;
 
 ScrapServelOneAtTime();
 
-function ScrapServel1()
+// Async scrap servel
+function ScrapServel()
 {
-    var ruts = GenerateRuts(18065017, 18065020);
-
-    var horseman = new Horseman({
+    var horsemanOptions = {
         loadImages: false,
         timeout: 10000
-    });
+    };
+    var horseman = new Horseman(horsemanOptions);
+    var ruts = GenerateRuts(_min, _max);
 
     horseman
         .userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0")
         .open("https://consulta.servel.cl/");
 
-    ruts.forEach(function(rut)
+    ruts.forEach((rut) =>
     {
-
-
-
-
+        HorsemanScrap(rut);
         horseman.close();
     });
 }
 
-
+// Sync scrap servel
 function ScrapServelOneAtTime()
 {
     var ruts = GenerateRuts(_min, _max);
-
     var sequence = Promise.resolve();
 
-    ruts.forEach(function (rut)
+    ruts.forEach((rut) =>
     {
-        sequence = sequence.then(function()
-        {
-            console.log("Start - " + rut);
-            return HorsemanScrap(rut);
-        }).then(function()
-        {
-            if (RemoveDigito(rut) == _max)
-                console.log("Scraping Ended");
-        });
+        sequence = sequence.then(() => HorsemanScrap(rut))
+            .then(() =>
+            {
+                if (RemoveDigito(rut) == _max)
+                    console.log("Scraping Ended");
+            });
     });
 }
 
 function HorsemanScrap(rut)
 {
-    var horseman = new Horseman({
+    var horseman = new Horseman(
+    {
         loadImages: false,
         timeout: 10000
     });
@@ -64,12 +59,8 @@ function HorsemanScrap(rut)
         .value("#Nombre", "")
         .value("#RunIn", rut)
         .click("#btnConsulta")
-        .waitFor(function(selector)
-            {
-                return $(selector).text() !== "";
-            },
-            "#Nombre", true)
-        .evaluate(function()
+        .waitFor((selector) => $(selector).text() !== "", "#Nombre", true)
+        .evaluate(() =>
         {
             var informacion = {
                 Rut: $("#Run").text(),
@@ -81,22 +72,23 @@ function HorsemanScrap(rut)
                 Mesa: $("#Mesa").text(),
                 Habilitado: $("#Habilitado").text(),
                 LocalVotacion: $("#Local").text(),
-                Direccsion: $("#Direccion").text()
+                Direccion: $("#Direccion").text()
             }
 
             return informacion;
         })
-        .then(function(informacion)
+        .then((informacion) =>
         {
             Save(informacion, rut);
         })
         .close()
-        .catch(function(err)
+        .catch((err) =>
         {
             Save(err, "Error_" + rut);
         });
 }
 
+// Calculate the dv acording to the given rut
 function GetDigito(rut)
 {
     var suma = 0;
@@ -109,7 +101,7 @@ function GetDigito(rut)
         if (mult === 7)
             mult = 2;
         else
-            mult ++;
+            mult++;
     }
 
     var resto = 11 - (suma % 11);
@@ -126,11 +118,13 @@ function GetDigito(rut)
         return resto;
 }
 
+// Remove the dv from the rut
 function RemoveDigito(rut)
 {
     return rut.substring(0, rut.length - 1);
 }
 
+// Save as text a given object in a file with the given name 
 function Save(obj, name)
 {
     var string = util.inspect(obj);
@@ -149,6 +143,8 @@ function Save(obj, name)
     });
 }
 
+
+// Generate a array of rut within the given range
 function GenerateRuts(min, max)
 {
     var ruts = [];
