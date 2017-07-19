@@ -135,14 +135,11 @@ function Save(obj, name)
     fs.writeFile(path + fileName, string, function(err)
     {
         if (err)
-        {
             return console.log(err);
-        }
 
         console.log("File created: " + fileName);
     });
 }
-
 
 // Generate a array of rut within the given range
 function GenerateRuts(min, max)
